@@ -3,21 +3,37 @@
 # Load helper from lib/util
 source [file join $env(HOME) bin lib util load-config.tcl]
 
-# Load script's matching configuration
-load_config [info script]
-
-set timeout 60
-
 # Parse arguments
-if {$argc < 1} {
-    puts stderr "Usage:"
-    puts stderr "  aire --login"
-    puts stderr "  aire --copy <file1> \[file2 ...\]"
-    exit 1
+if {$argc == 0} {
+    set mode "--login"
+} else {
+    set mode [lindex $argv 0]
 }
 
-set mode [lindex $argv 0]
+# Display help before loading configuration or authenticating
+if {$mode eq "--help" || $mode eq "-h"} {
+    puts "Usage: aire \[OPTION\] \[FILES...\]"
+    puts ""
+    puts "Options:"
+    puts "  --login               SSH login via jump host (default)"
+    puts "  --copy, -scp FILES    Copy files to remote ~/dl/"
+    puts "  --help, -h            Show this help message"
+    puts ""
+    puts "Examples:"
+    puts "  aire"
+    puts "  aire --login"
+    puts "  aire --copy file1.py"
+    puts "  aire -scp *.sh"
+    puts "  aire --copy file1.py file2.py file3.sh"
+    exit 0
+}
 
+# Load script's matching configuration
+load_config [info script]
+set timeout 60
+
+
+# Build SSH or SCP command
 switch -- $mode {
     "--login" {
         set command [list ssh -J \
@@ -37,7 +53,7 @@ switch -- $mode {
         set command [concat \
             [list scp -J "${username}@${jump_host}"] \
             $files \
-            [list "${username}@${destination}:~/hpc/"]]
+            [list "${username}@${destination}:~/dl/"]]
     }
 
     default {
